@@ -1,19 +1,26 @@
 package com.yan.ahtpodcast002.ui
 
 import android.os.Bundle
+import android.text.method.ScrollingMovementMethod
 import android.view.*
+import android.widget.Adapter
+import android.widget.Scroller
 import android.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.yan.ahtpodcast002.R
+import com.yan.ahtpodcast002.ui.adapter.EpisodeListAdapter
 import com.yan.ahtpodcast002.viewmodels.PodcastViewModel
 import kotlinx.android.synthetic.main.activity_podcast.*
 import kotlinx.android.synthetic.main.fragment_podcast_details.*
 
 class PodcastDetailsFragment : Fragment() {
-    private val podcastviewModel: PodcastViewModel by activityViewModels()
 
+    private val podcastviewModel: PodcastViewModel by activityViewModels()
+    private lateinit var episodeListAdapter: EpisodeListAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +37,7 @@ class PodcastDetailsFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+        setupControls()
         updateControls()
     }
 
@@ -55,12 +63,31 @@ class PodcastDetailsFragment : Fragment() {
 
     // Instantiate Fragment in Activity
     companion object {
-        fun newInstance(): PodcastDetailsFragment{
-            return  PodcastDetailsFragment()
+        fun newInstance(): PodcastDetailsFragment {
+            return PodcastDetailsFragment()
         }
     }
 
+    //
+    private fun setupControls() {
 
+        //1
+        feedDescTextView.movementMethod = ScrollingMovementMethod()
+
+        //2
+        episodeRecyclerView.setHasFixedSize(true)
+        val layoutManager = LinearLayoutManager(activity)
+        episodeRecyclerView.layoutManager = layoutManager
+
+        val dividerItemDecoration =
+            DividerItemDecoration(episodeRecyclerView.context, layoutManager.orientation)
+        episodeRecyclerView.addItemDecoration(dividerItemDecoration)
+
+        episodeListAdapter = EpisodeListAdapter(podcastviewModel.activePodcastViewData?.episodes)
+        episodeRecyclerView.adapter = episodeListAdapter
+        //3
+
+    }
 
 
 }

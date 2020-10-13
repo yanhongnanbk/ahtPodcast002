@@ -16,9 +16,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.jakewharton.threetenabp.AndroidThreeTen
 import com.yan.ahtpodcast002.R
 import com.yan.ahtpodcast002.repository.ItunesRepository
 import com.yan.ahtpodcast002.repository.PodcastRepository
+import com.yan.ahtpodcast002.service.FeedService
 import com.yan.ahtpodcast002.service.ItunesService
 import com.yan.ahtpodcast002.ui.adapter.PodcastListAdapter
 import com.yan.ahtpodcast002.ui.adapter.PodcastListAdapterListener
@@ -38,7 +40,7 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_podcast)
-
+        AndroidThreeTen.init(this)
 
 //        val itunesService = ItunesService.instance
 //        val itunesRepository = ItunesRepository(itunesService)
@@ -111,10 +113,9 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener {
     private fun setupViewModels() {
 
         val service = ItunesService.instance
+        val rssService = FeedService.instance
         searchViewModel.itunesRepository = ItunesRepository(service)
-        podcastViewModel.podcastRepository = PodcastRepository()
-
-
+        podcastViewModel.podcastRepository = PodcastRepository(rssService)
 
     }
 
@@ -134,16 +135,15 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener {
     // Interface onclick
     override fun onShowDetails(podcastSummaryViewData: SearchViewModel.PodcastSummaryViewData) {
 //        TODO("Not yet implemented")
-        Log.d("PodcastActivity ", "${podcastSummaryViewData.lastUpdated}")
 
         val feedUrl = podcastSummaryViewData.feedUrl ?: return
         showProgressBar()
-        podcastViewModel.getPodcast(podcastSummaryViewData){
+        podcastViewModel.getPodcast(podcastSummaryViewData) {
 
             hideProgressBar()
-            if (it!=null){
+            if (it != null) {
                 showDetailsFragment()
-            }else{
+            } else {
                 showError("Error loading feed $feedUrl")
             }
 
