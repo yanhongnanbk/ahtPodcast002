@@ -17,6 +17,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.work.*
 import com.yan.ahtpodcast002.R
 import com.yan.ahtpodcast002.database.PodPlayDatabase
 import com.yan.ahtpodcast002.repository.ItunesRepository
@@ -27,7 +28,9 @@ import com.yan.ahtpodcast002.ui.adapter.PodcastListAdapter
 import com.yan.ahtpodcast002.ui.adapter.PodcastListAdapterListener
 import com.yan.ahtpodcast002.viewmodels.PodcastViewModel
 import com.yan.ahtpodcast002.viewmodels.SearchViewModel
+import com.yan.ahtpodcast002.worker.EpisodeUpdateWorker
 import kotlinx.android.synthetic.main.activity_podcast.*
+import java.util.concurrent.TimeUnit
 
 
 class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener, OnPodcastDetailsListener {
@@ -50,6 +53,7 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener, OnPodca
         // This get the saved Intent and passes it to the existing handleIntent() method
         handleIntent(intent)
         addBackStackListener()
+        scheduleJobs()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -107,9 +111,16 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener, OnPodca
         if (Intent.ACTION_SEARCH == intent.action) {
 
             val query = intent.getStringExtra(SearchManager.QUERY) ?: return
-            Log.d(TAG, query.toString())
             performSearch(query)
         }
+        val podcastFeedUrl = intent.getStringExtra(EpisodeUpdateWorker.EXTRA_FEED_URL)
+        if (podcastFeedUrl != null) {
+            podcastViewModel.setActivePodcast(podcastFeedUrl) {
+                it?.let { podcastSummaryView ->
+                    onShowDetails(podcastSummaryView) }
+            }
+        }
+
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -163,7 +174,6 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener, OnPodca
 
             hideProgressBar()
             if (it != null && !it.episodes?.isEmpty()!!) {
-//                Log.d("PodcastActivity", "Title+${it.feedTitle}+Episodes+${it.episodes}")
                 showDetailsFragment()
             } else {
                 showError("Error loading feed $feedUrl")
@@ -185,6 +195,7 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener, OnPodca
     companion object {
         private const val TAG_DETAILS_FRAGMENT = "DetailsFragment"
         private const val TAG = "PodcastActivity"
+        private const val TAG_EPISODE_UPDATE_JOB = "com.raywenderlich.podplay.episodes"
     }
 
 
@@ -199,14 +210,12 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener, OnPodca
     override fun onSubscribe() {
         podcastViewModel.saveActivePodcast()
         supportFragmentManager.popBackStack()
-        Log.d("PodcastActivity", "subscribe Pop")
     }
 
     override fun onUnsubscribe() {
         //
         podcastViewModel.deleteActivePodcast()
         supportFragmentManager.popBackStack()
-        Log.d("PodcastActivity", "unSubscribe Pop")
     }
 
     private fun showSubscribedPodcasts() {
@@ -261,4 +270,23 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener, OnPodca
         }
     }
 
+    /**Chap 25*/
+    private fun scheduleJobs() {
+// 1       Create a list of constraints for the worker to run under. Work manager will not execute util the constraints are met. NetworkType is useful if dont want to run on cell network
+        val constraints: Constraints = Constraints.Builder().apply {
+            setRequiredNetworkType(NetworkType.UNMETERED)
+            setRequiresCharging(true)
+        }.build()
+// 2    Another option is Onetimeworkrequestbuilder => required for one time work request. The PeriodicWorkRequestBuilder can take multiple parameter. In this case, it takes two parameters. for instance, it run once every hour as long as the above conditions are met.
+        val request = PeriodicWorkRequestBuilder<EpisodeUpdateWorker>(
+            1, TimeUnit.HOURS
+        )
+            .setConstraints(constraints)
+            .build()
+// 3    ...enqueue -> schedule the work request. The first parameter is the unique name for the work request. Only one work request will run at a time using the provided name.
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            TAG_EPISODE_UPDATE_JOB,
+            ExistingPeriodicWorkPolicy.REPLACE, request
+        )
+    }
 }

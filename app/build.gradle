@@ -72,4 +72,7 @@ dependencies {
     // RoomDb
     implementation "androidx.room:room-runtime:$room_version"
     kapt "androidx.room:room-compiler:$room_version"
+
+    // WorkManager
+    implementation "androidx.work:work-runtime-ktx:2.4.0"
 }
