@@ -258,32 +258,6 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener, OnPodca
         })
     }
 
-    override fun onBackPressed() {
-        super.onBackPressed()
-        Log.d("PodcastActivity", "Back Pressed")
-    }
-
-
-//
-//    // display details Fragment
-//
-//    private fun showDetailsFragment() {
-//// 1
-//        val podcastDetailsFragment = createPodcastDetailsFragment()
-//// 2
-
-//        supportFragmentManager.beginTransaction().add(
-//            R.id.podcastDetailsContainer,
-//            podcastDetailsFragment, PodcastActivity.TAG_DETAILS_FRAGMENT
-//        )
-//            .addToBackStack("DetailsFragment").commit()
-//// 3
-//        podcastRecyclerView.visibility = View.INVISIBLE
-//// 4
-//        searchMenuItem.isVisible = false
-////        searchMenuItem.isVisible = false
-//    }
-
     private fun showDetailsFragment() {
         val podcastDetailsFragment = createPodcastDetailsFragment()
         if (podcastDetailsFragment.isAdded) {
