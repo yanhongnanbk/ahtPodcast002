@@ -1,7 +1,9 @@
 package com.yan.ahtpodcast002.repository
 
-import com.yan.ahtpodcast002.entities.database.Episode
-import com.yan.ahtpodcast002.entities.database.Podcast
+import androidx.lifecycle.LiveData
+import com.yan.ahtpodcast002.database.PodcastDao
+import com.yan.ahtpodcast002.entities.models.Episode
+import com.yan.ahtpodcast002.entities.models.Podcast
 import com.yan.ahtpodcast002.entities.rss.RssFeedResponse
 import com.yan.ahtpodcast002.service.FeedService
 import com.yan.ahtpodcast002.service.RssFeedService
@@ -10,25 +12,74 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-class PodcastRepository(private var feedService: FeedService) {
-    fun getPodcast(feedUrl: String, callback: ((Podcast?) -> Unit)) {
-        val rssFeedService = RssFeedService()
-        rssFeedService.getFeed(feedUrl) {
+class PodcastRepository(
+    private var feedService: FeedService,
+    private var podcastDao: PodcastDao
+) {
+    //    fun getPodcast(feedUrl: String, callback: ((Podcast?) -> Unit)) {
+////        /***/
+////        GlobalScope.launch {
+////            val podcast = podcastDao.loadPodcast(feedUrl)
+////            if (podcast != null) {
+////                podcast.id?.let {
+////                    podcast.episodes = podcastDao.loadEpisodes(it)
+////                    GlobalScope.launch(Dispatchers.Main) {
+////                        callback(podcast)
+////                    }
+////                }
+////            } else {
+////                /***/
+////                val rssFeedService = RssFeedService()
+////                rssFeedService.getFeed(feedUrl) { rssFeedResponse ->
+////                    var podcast: Podcast? = null
+////                    // if the feedResponse is null, pass null to the callback method, if the  response is valid, then you convert it to a podcast object and pass it to the callback method
+////                    if (rssFeedResponse != null) {
+////                        podcast = rssResponseToPodcast(feedUrl, "", rssFeedResponse)
+////                    }
+////
+////                    GlobalScope.launch(Dispatchers.Main) {
+////                        callback(podcast)
+////                    }
+////
+////                }
+////                callback(Podcast(null, feedUrl, "No Name", "No description", "No image"))
+////            }
+////        }
+////    }
+    fun getPodcast(feedUrl: String, callback: (Podcast?) -> Unit) {
 
-            rssFeedResponse ->
-            var podcast:Podcast?=null
-            // if the feedResponse is null, pass null to the callback method, if the  response is valid, then you convert it to a podcast object and pass it to the callback method
-            if (rssFeedResponse!=null){
-                podcast = rssResponseToPodcast(feedUrl, "", rssFeedResponse)
+        GlobalScope.launch {
+
+            val podcast = podcastDao.loadPodcast(feedUrl)
+
+            if (podcast != null) {
+                podcast.id?.let {
+                    podcast.episodes = podcastDao.loadEpisodes(it)
+                    GlobalScope.launch(Dispatchers.Main) {
+                        callback(podcast)
+                    }
+                }
+            } else {
+
+                feedService.getFeed(feedUrl) { feedResponse ->
+
+                    if (feedResponse == null) {
+                        GlobalScope.launch(Dispatchers.Main) {
+                            callback(null)
+                        }
+                    } else {
+                        val podcast = rssResponseToPodcast(feedUrl, "", feedResponse)
+                        GlobalScope.launch(Dispatchers.Main) {
+                            callback(podcast)
+                        }
+                    }
+                }
             }
-
-            GlobalScope.launch(Dispatchers.Main){
-                callback(podcast)
-            }
-
         }
-        callback(Podcast(feedUrl, "No Name", "No description", "No image"))
+
     }
+
+    /***/
 
     // Helper method to convert the RSS response data into Episode and Podcast Object
     private fun rssItemToEpisodes(episodeResponses: List<RssFeedResponse.EpisodeResponse>): List<Episode> {
@@ -36,6 +87,7 @@ class PodcastRepository(private var feedService: FeedService) {
 
             Episode(
                 it.guid ?: "",
+                null,
                 it.title ?: "",
                 it.description ?: "",
                 it.url ?: "",
@@ -59,6 +111,7 @@ class PodcastRepository(private var feedService: FeedService) {
             rssResponse.summary else rssResponse.description
         //3 create a new Podcast object and return it to the caller
         return Podcast(
+            null,
             feedUrl,
             rssResponse.title,
             description,
@@ -66,5 +119,25 @@ class PodcastRepository(private var feedService: FeedService) {
             rssResponse.lastUpdated,
             episodes = rssItemToEpisodes(items)
         )
+    }
+
+    fun save(podcast: Podcast) {
+        GlobalScope.launch {
+            val podcastId = podcastDao.insertPodcast(podcast)
+            for (episode in podcast.episodes) {
+                episode.podcastId = podcastId
+                podcastDao.insertEpisode(episode)
+            }
+        }
+    }
+
+    fun getAll(): LiveData<List<Podcast>> {
+        return podcastDao.loadPodcasts()
+    }
+
+    fun delete(podcast: Podcast) {
+        GlobalScope.launch {
+            podcastDao.deletePodcast(podcast)
+        }
     }
 }
