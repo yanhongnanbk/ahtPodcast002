@@ -11,19 +11,40 @@ import com.yan.ahtpodcast002.utils.HtmlUtils
 import com.yan.ahtpodcast002.viewmodels.PodcastViewModel
 import kotlinx.android.synthetic.main.item_episode.view.*
 
-class EpisodeListAdapter(private var episodeViewList: List<PodcastViewModel.EpisodeViewData>?) :
+class EpisodeListAdapter(
+    private var episodeViewList: List<PodcastViewModel.EpisodeViewData>?,
+    private val episodeListAdapterListener:
+    EpisodeListAdapterListener
+) :
     RecyclerView.Adapter<EpisodeListAdapter.ViewHolder>() {
-    inner class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
+    inner class ViewHolder(
+        v: View, private
+        val episodeListAdapterListener:
+        EpisodeListAdapterListener
+    ) : RecyclerView.ViewHolder(v) {
         var episodeViewData: PodcastViewModel.EpisodeViewData? = null
         val titleTextView: TextView = v.titleView
         val descTextView: TextView = v.descView
         val durationTextView: TextView = v.durationView
         val releaseDateTextView: TextView = v.releaseDateView
+
+        init {
+            v.setOnClickListener {
+                episodeViewData?.let {
+                    episodeListAdapterListener.onSelectedEpisode(it)
+                }
+            }
+        }
+    }
+
+    interface EpisodeListAdapterListener {
+        fun onSelectedEpisode(episodeViewData: PodcastViewModel.EpisodeViewData)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return ViewHolder(
-            LayoutInflater.from(parent.context).inflate(R.layout.item_episode, parent, false)
+            LayoutInflater.from(parent.context).inflate(R.layout.item_episode, parent, false),
+            episodeListAdapterListener
         )
     }
 
