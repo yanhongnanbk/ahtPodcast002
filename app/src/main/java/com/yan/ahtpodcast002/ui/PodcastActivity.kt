@@ -6,7 +6,6 @@ import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.os.StrictMode
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -18,8 +17,6 @@ import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.jakewharton.threetenabp.AndroidThreeTen
-import com.yan.ahtpodcast002.BuildConfig
 import com.yan.ahtpodcast002.R
 import com.yan.ahtpodcast002.database.PodPlayDatabase
 import com.yan.ahtpodcast002.repository.ItunesRepository
@@ -82,6 +79,10 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener, OnPodca
                 searchManager.getSearchableInfo(componentName)
             )
 
+            if (supportFragmentManager.backStackEntryCount > 0) {
+                podcastRecyclerView.visibility = View.INVISIBLE
+            }
+
             if (podcastRecyclerView.visibility == View.INVISIBLE) {
                 searchMenuItem.isVisible = false
             }
@@ -90,38 +91,6 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener, OnPodca
         return true
 
     }
-
-//    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-//        val inflater = menuInflater
-//        inflater.inflate(R.menu.menu_search, menu)
-//
-//        searchMenuItem = menu.findItem(R.id.search_item)
-//        val searchView = searchMenuItem.actionView as SearchView
-//
-//        searchMenuItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-//            override fun onMenuItemActionExpand(p0: MenuItem?): Boolean {
-//                return true
-//            }
-//
-//            override fun onMenuItemActionCollapse(p0: MenuItem?): Boolean {
-//                showSubscribedPodcasts()
-//                return true
-//            }
-//        })
-//
-//        val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
-//        searchView.setSearchableInfo(searchManager.getSearchableInfo(componentName))
-//
-//        if (supportFragmentManager.backStackEntryCount > 0) {
-//            podcastRecyclerView.visibility = View.INVISIBLE
-//        }
-//
-//        if (podcastRecyclerView.visibility == View.INVISIBLE) {
-//            searchMenuItem.isVisible = false
-//        }
-//
-//        return true
-//    }
 
     private fun performSearch(term: String) {
         showProgressBar()
@@ -284,14 +253,12 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapterListener, OnPodca
         return podcastDetailsFragment
     }
 
-    private fun addBackStackListener()
-    {
+    private fun addBackStackListener() {
         supportFragmentManager.addOnBackStackChangedListener {
             if (supportFragmentManager.backStackEntryCount == 0) {
                 podcastRecyclerView.visibility = View.VISIBLE
             }
         }
     }
-
 
 }
